@@ -1,0 +1,16 @@
+{
+  "name": "webpack-pdf.js-example",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "webpack",
+    "watch": "webpack --watch --progress",
+    "start": "http-server ."
+  },
+  "devDependencies": {
+    "webpack": "^5.11.1",
+    "webpack-cli": "^4.3.1"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^2.13.216"
+  }
+}
