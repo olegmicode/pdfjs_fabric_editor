@@ -1,10 +1,8 @@
-import { fabric } from 'fabric'
-import { Context as SVGCanvasContext } from 'svgcanvas'
-const pdfjsLib = require('pdfjs-dist')
-const Canvas2Svg = require('canvas2svg')
-const pdfjsViewer = require('pdfjs-dist/web/pdf_viewer')
 const Base64Prefix = 'data:application/pdf;base64,'
-pdfjsLib.GlobalWorkerOptions.workerSrc = './build/script/pdf.worker.bundle.js'
+
+function getPdfHandler() {
+    return window['pdfjs-dist/build/pdf']
+}
 
 function readBlob(blob) {
     return new Promise((resolve, reject) => {
@@ -15,7 +13,8 @@ function readBlob(blob) {
     })
 }
 
-async function loadPDFFromData(pdfData, pages) {
+async function printPDF(pdfData, pages) {
+    const pdfjsLib = await getPdfHandler()
     pdfData = pdfData instanceof Blob ? await readBlob(pdfData) : pdfData
     const data = atob(
         pdfData.startsWith(Base64Prefix)
@@ -24,13 +23,6 @@ async function loadPDFFromData(pdfData, pages) {
     )
     // Using DocumentInitParameters object to load binary data.
     const loadingTask = pdfjsLib.getDocument({ data })
-    return printPDF(loadingTask, pages)
-}
-async function loadPDFFromURL(pdfPath, pages) {
-    const loadingTask = pdfjsLib.getDocument({ url: pdfPath })
-    return printPDF(loadingTask, pages)
-}
-async function printPDF(loadingTask, pages) {
     return loadingTask.promise.then((pdf) => {
         const numPages = pdf.numPages
         return new Array(numPages).fill(0).map((__, i) => {
@@ -48,17 +40,6 @@ async function printPDF(loadingTask, pages) {
                 const context = canvas.getContext('2d')
                 canvas.height = viewport.height
                 canvas.width = viewport.width
-                // const options = {
-                //     height: 1000, // falsy values get converted to 500
-                //     width: 1000, // falsy values get converted to 500
-                //     ctx: context, // existing Context to wrap around
-                //     enableMirroring: false, // whether canvas mirroring (get image data) is enabled (defaults to false)
-                //     document: undefined // overrides default document object
-                // }
-
-                // const ctx = new SVGCanvasContext(options)
-
-                // console.log(context)
                 // Render PDF page into canvas context
                 const renderContext = {
                     canvasContext: context,
@@ -73,25 +54,8 @@ async function printPDF(loadingTask, pages) {
 
 async function pdfToImage(pdfData, canvas) {
     const scale = 1 / window.devicePixelRatio
-    return (await loadPDFFromData(pdfData)).map(async (c) => {
-        const ctx = await c
-        console.log('[pdfToImage]', ctx)
-
-        // canvas.add(
-        //     new fabric.Image(await c, {
-        //         scaleX: scale,
-        //         scaleY: scale
-        //     })
-        // )
-    })
-}
-async function pdfToImageFromURL(url, canvas) {
-    const scale = 1 / window.devicePixelRatio
-    return (await loadPDFFromURL(url)).map(async (c) => {
+    return (await printPDF(pdfData)).map(async (c) => {
         const cc = await c
-        // const ctx = cc.getContext('2d')
-        // const mySerializedSVG = ctx.getSerializedSvg() //true here, if you need to convert named to numbered entities.
-        // console.log('[mySerializedSVG]', mySerializedSVG)
 
         canvas.add(
             new fabric.Image(await c, {
@@ -102,15 +66,17 @@ async function pdfToImageFromURL(url, canvas) {
     })
 }
 
-const canvas = new fabric.Canvas('c')
+const canvas = (this.__canvas = new fabric.Canvas('c'))
 const text = new fabric.Text('Upload PDF')
+canvas.add(new fabric.Circle({ radius: 100, fill: 'green' }), text)
 
-// document.querySelector('input').addEventListener('change', async (e) => {
-//     text.set('text', 'loading...')
-//     canvas.requestRenderAll()
-//     await Promise.all(pdfToImage(e.target.files[0], canvas))
-//     canvas.remove(text)
-// })
+document.querySelector('input').addEventListener('change', async (e) => {
+    text.set('text', 'loading...')
+    canvas.requestRenderAll()
+    await Promise.all(pdfToImage(e.target.files[0], canvas))
+    canvas.remove(text)
+})
+
 document.addEventListener('DOMContentLoaded', async () => {
     pdfToImageFromURL('/docs/test1.pdf', canvas)
 })
