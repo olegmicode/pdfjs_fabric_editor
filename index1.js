@@ -1,7 +1,6 @@
 import { fabric } from 'fabric'
 import { Context as SVGCanvasContext } from 'svgcanvas'
 const pdfjsLib = require('pdfjs-dist')
-const Canvas2Svg = require('canvas2svg')
 const pdfjsViewer = require('pdfjs-dist/web/pdf_viewer')
 const Base64Prefix = 'data:application/pdf;base64,'
 pdfjsLib.GlobalWorkerOptions.workerSrc = './build/script/pdf.worker.bundle.js'
@@ -70,50 +69,40 @@ async function printPDF(loadingTask, pages) {
         })
     })
 }
+function svgToFabricCanvas(canvas, ctx) {
+    const svgStr = ctx.getSerializedSvg()
+    fabric.loadSVGFromString(svgStr, function (objects, options) {
+        const obj = fabric.util.groupSVGElements(objects, options)
+        obj.scale(1.0)
+        canvas.add(obj)
+        console.log('[add obj]', obj)
+    })
+}
 
-// async function pdfToImage(pdfData, canvas) {
-//     const scale = 1 / window.devicePixelRatio
-//     return (await loadPDFFromData(pdfData)).map(async (c) => {
-//         const ctx = await c
-//         console.log('[pdfToImage]', ctx)
-
-//         // canvas.add(
-//         //     new fabric.Image(await c, {
-//         //         scaleX: scale,
-//         //         scaleY: scale
-//         //     })
-//         // )
-//     })
-// }
+async function pdfToImage(pdfData, canvas) {
+    const scale = 1 / window.devicePixelRatio
+    return (await loadPDFFromData(pdfData)).map(async (c) => {
+        const ctx = await c
+        svgToFabricCanvas(canvas, ctx)
+    })
+}
 async function pdfToImageFromURL(url, canvas) {
     const scale = 1 / window.devicePixelRatio
     return (await loadPDFFromURL(url)).map(async (c) => {
         const ctx = await c
-        const svgStr = ctx.getSerializedSvg()
-        fabric.loadSVGFromString(svgStr, function (objects, options) {
-            const obj = fabric.util.groupSVGElements(objects, options)
-            obj.scale(1.0)
-            canvas.add(obj)
-            console.log('[add obj]', obj)
-        })
-        // canvas.add(
-        //     new fabric.Image(await c, {
-        //         scaleX: scale,
-        //         scaleY: scale
-        //     })
-        // )
+        svgToFabricCanvas(canvas, ctx)
     })
 }
 
 const canvas = new fabric.Canvas('c')
 const text = new fabric.Text('Upload PDF')
 
-// document.querySelector('input').addEventListener('change', async (e) => {
-//     text.set('text', 'loading...')
-//     canvas.requestRenderAll()
-//     await Promise.all(pdfToImage(e.target.files[0], canvas))
-//     canvas.remove(text)
-// })
-document.addEventListener('DOMContentLoaded', async () => {
-    pdfToImageFromURL('/docs/test4.pdf', canvas)
+document.querySelector('input').addEventListener('change', async (e) => {
+    text.set('text', 'loading...')
+    canvas.requestRenderAll()
+    await Promise.all(pdfToImage(e.target.files[0], canvas))
+    canvas.remove(text)
 })
+// document.addEventListener('DOMContentLoaded', async () => {
+//     pdfToImageFromURL('/docs/test4.pdf', canvas)
+// })

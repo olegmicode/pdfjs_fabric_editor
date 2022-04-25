@@ -6,8 +6,6 @@ import {
     formatXML
 } from 'dom-to-svg'
 
-import canvas2svg from 'canvas2svg'
-
 const pdfjsLib = require('pdfjs-dist')
 const pdfjsViewer = require('pdfjs-dist/web/pdf_viewer')
 import { sampleSVGStr } from './svg'
