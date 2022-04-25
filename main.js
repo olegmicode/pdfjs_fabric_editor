@@ -1,8 +1,20 @@
-import 'pdfjs-dist/web/pdf_viewer.css'
-import './main.css'
+import { fabric } from 'fabric'
+import {
+    documentToSVG,
+    elementToSVG,
+    inlineResources,
+    formatXML
+} from 'dom-to-svg'
+
+import canvas2svg from 'canvas2svg'
 
 const pdfjsLib = require('pdfjs-dist')
 const pdfjsViewer = require('pdfjs-dist/web/pdf_viewer')
+import { sampleSVGStr } from './svg'
+import { sampleSVGStr1 } from './svg1'
+
+import 'pdfjs-dist/web/pdf_viewer.css'
+import './main.css'
 
 if (!pdfjsLib.getDocument || !pdfjsViewer.PDFViewer) {
     // eslint-disable-next-line no-alert
@@ -16,7 +28,6 @@ const CMAP_URL = './build/cmaps/'
 const CMAP_PACKED = true
 
 const eventBus = new pdfjsViewer.EventBus()
-
 // (Optionally) enable hyperlinks within PDF files.
 const pdfLinkService = new pdfjsViewer.PDFLinkService({
     eventBus
@@ -98,23 +109,80 @@ async function loadingPDF(pdfPath, container) {
     })
 }
 
-// entry point
-document.addEventListener('DOMContentLoaded', () => {
-    const pdfFileLoader = document.getElementById('pdf-file-status')
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+}
+// canvas action
 
-    document
-        .getElementById('pdf-file-loader')
-        .addEventListener('change', async (e) => {
-            pdfFileLoader.innerText = 'loading...'
-            const targetFile = e.target.files[0]
-            if (targetFile.type == 'application/pdf') {
-                await loadingPDF(
-                    targetFile,
-                    document.getElementById('viewerContainer')
-                )
-                pdfFileLoader.innerText = 'loaded'
-            } else {
-                pdfFileLoader.innerText = 'failed'
-            }
-        })
+const loadFabricElement = async (viewerContainer) => {
+    const canvas = new fabric.Canvas('fabric-editor')
+    canvas.setHeight(1000)
+    canvas.setWidth(500)
+
+    // const selector = 'g[clip-path^="url(#clippath"][clip-path$=")"]'
+    // Capture specific element
+
+    const selector = '.canvasWrapper>svg'
+    await sleep(3000)
+
+    const clips = viewerContainer.querySelectorAll(selector)
+
+    if (clips && clips.length > 0) {
+        const svgClip = clips[0]
+        const svgDocument = elementToSVG(svgClip)
+        // Inline external resources (fonts, images, etc) as data: URIs
+        await inlineResources(svgDocument.documentElement)
+        // Get SVG string
+        const svgString = new XMLSerializer().serializeToString(svgDocument)
+        console.log('[svgClipStr]', svgString)
+        // fabric.loadSVGFromString(svgString, function (objects, options) {
+        //     const obj = fabric.util.groupSVGElements(objects, options)
+        //     obj.scale(1.0)
+        //     canvas.add(obj)
+        //     console.log('[add obj]', obj)
+        // })
+        // fabric.loadSVGFromURL('/docs/test4.svg', function (objects, options) {
+        //     const obj = fabric.util.groupSVGElements(objects, options)
+        //     obj.scale(1.0)
+        //     canvas.add(obj)
+        //     console.log('[test4.svg obj]', obj)
+        // })
+
+        // console.log('[loadSVGFromURL obj]', svgClip)
+        // fabric.loadSVGFromURL('/docs/tiger2.svg', function (objects, options) {
+        //     const obj = fabric.util.groupSVGElements(objects, options)
+        //     obj.scale(1.0)
+        //     canvas.add(obj)
+        //     console.log('[sample.svg obj]', obj)
+        // })
+    }
+}
+
+// entry point
+document.addEventListener('DOMContentLoaded', async () => {
+    const pdfFileLoader = document.getElementById('pdf-file-status')
+    const viewerContainer = document.getElementById('viewerContainer')
+
+    // document
+    //     .getElementById('pdf-file-loader')
+    //     .addEventListener('change', async (e) => {
+    //         pdfFileLoader.innerText = 'loading...'
+    //         const targetFile = e.target.files[0]
+    //         if (targetFile.type == 'application/pdf') {
+    //             // await loadingPDF(
+    //             //     targetFile,
+    //             //     viewerContainer
+    //             // )
+    //             // loadFabricElement()
+
+    //             pdfFileLoader.innerText = 'loaded'
+    //         } else {
+    //             pdfFileLoader.innerText = 'failed'
+    //         }
+    //     })
+
+    // await loadingPDFFromURL('/docs/test4.pdf', viewerContainer)
+    await loadingPDFFromURL('/docs/test1.pdf', viewerContainer)
+    // await loadingPDFFromURL('/docs/sample.pdf', viewerContainer)
+    loadFabricElement(viewerContainer)
 })

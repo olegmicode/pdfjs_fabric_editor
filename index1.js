@@ -48,57 +48,60 @@ async function printPDF(loadingTask, pages) {
                 const context = canvas.getContext('2d')
                 canvas.height = viewport.height
                 canvas.width = viewport.width
-                // const options = {
-                //     height: 1000, // falsy values get converted to 500
-                //     width: 1000, // falsy values get converted to 500
-                //     ctx: context, // existing Context to wrap around
-                //     enableMirroring: false, // whether canvas mirroring (get image data) is enabled (defaults to false)
-                //     document: undefined // overrides default document object
-                // }
+                const options = {
+                    height: 1000, // falsy values get converted to 500
+                    width: 1000, // falsy values get converted to 500
+                    ctx: context, // existing Context to wrap around
+                    enableMirroring: false, // whether canvas mirroring (get image data) is enabled (defaults to false)
+                    document: undefined // overrides default document object
+                }
 
-                // const ctx = new SVGCanvasContext(options)
+                const virtualContext = new SVGCanvasContext(options)
 
                 // console.log(context)
                 // Render PDF page into canvas context
                 const renderContext = {
-                    canvasContext: context,
+                    canvasContext: virtualContext,
                     viewport
                 }
                 const renderTask = page.render(renderContext)
-                return renderTask.promise.then(() => canvas)
+                return renderTask.promise.then(() => virtualContext)
             })
         })
     })
 }
 
-async function pdfToImage(pdfData, canvas) {
-    const scale = 1 / window.devicePixelRatio
-    return (await loadPDFFromData(pdfData)).map(async (c) => {
-        const ctx = await c
-        console.log('[pdfToImage]', ctx)
+// async function pdfToImage(pdfData, canvas) {
+//     const scale = 1 / window.devicePixelRatio
+//     return (await loadPDFFromData(pdfData)).map(async (c) => {
+//         const ctx = await c
+//         console.log('[pdfToImage]', ctx)
 
+//         // canvas.add(
+//         //     new fabric.Image(await c, {
+//         //         scaleX: scale,
+//         //         scaleY: scale
+//         //     })
+//         // )
+//     })
+// }
+async function pdfToImageFromURL(url, canvas) {
+    const scale = 1 / window.devicePixelRatio
+    return (await loadPDFFromURL(url)).map(async (c) => {
+        const ctx = await c
+        const svgStr = ctx.getSerializedSvg()
+        fabric.loadSVGFromString(svgStr, function (objects, options) {
+            const obj = fabric.util.groupSVGElements(objects, options)
+            obj.scale(1.0)
+            canvas.add(obj)
+            console.log('[add obj]', obj)
+        })
         // canvas.add(
         //     new fabric.Image(await c, {
         //         scaleX: scale,
         //         scaleY: scale
         //     })
         // )
-    })
-}
-async function pdfToImageFromURL(url, canvas) {
-    const scale = 1 / window.devicePixelRatio
-    return (await loadPDFFromURL(url)).map(async (c) => {
-        const cc = await c
-        // const ctx = cc.getContext('2d')
-        // const mySerializedSVG = ctx.getSerializedSvg() //true here, if you need to convert named to numbered entities.
-        // console.log('[mySerializedSVG]', mySerializedSVG)
-
-        canvas.add(
-            new fabric.Image(await c, {
-                scaleX: scale,
-                scaleY: scale
-            })
-        )
     })
 }
 
@@ -112,5 +115,5 @@ const text = new fabric.Text('Upload PDF')
 //     canvas.remove(text)
 // })
 document.addEventListener('DOMContentLoaded', async () => {
-    pdfToImageFromURL('/docs/test1.pdf', canvas)
+    pdfToImageFromURL('/docs/test4.pdf', canvas)
 })

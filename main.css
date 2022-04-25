@@ -28,6 +28,20 @@ body {
 #viewerContainer {
     overflow: auto;
     position: absolute;
+    width: 50%;
+    height: 100%;
+    left: 0;
+}
+.fabric-editor-wrapper {
+    overflow: auto;
+    position: absolute;
+    width: 50%;
+    height: 100%;
+    border: 1px solid #333;
+    right: 0;
+}
+
+.fabric-editor {
     width: 100%;
     height: 100%;
 }

@@ -6,6 +6,7 @@ module.exports = {
     context: __dirname,
     entry: {
         main: './main.js',
+        index1: './index1.js',
         'pdf.worker': 'pdfjs-dist/build/pdf.worker.entry'
     },
     mode: 'none',
