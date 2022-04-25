@@ -80,14 +80,12 @@ function svgToFabricCanvas(canvas, ctx) {
 }
 
 async function pdfToImage(pdfData, canvas) {
-    const scale = 1 / window.devicePixelRatio
     return (await loadPDFFromData(pdfData)).map(async (c) => {
         const ctx = await c
         svgToFabricCanvas(canvas, ctx)
     })
 }
 async function pdfToImageFromURL(url, canvas) {
-    const scale = 1 / window.devicePixelRatio
     return (await loadPDFFromURL(url)).map(async (c) => {
         const ctx = await c
         svgToFabricCanvas(canvas, ctx)
